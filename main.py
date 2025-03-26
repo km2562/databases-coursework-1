@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import re 
 import sqlite3
 from tabulate import tabulate
@@ -278,35 +278,65 @@ def process_amend_pilot_menu(choice, id):
     update_pilot(column, value, id)  
     show_main_menu()        
 
+def process_add_menu(object):
+    if object == "flight":
+        print("Flights selected")
+        add_flight()
+    elif object == "destination":
+        print("Destination selected")
+        add_airport()
+    elif object == "route":
+        print("Route selected")    
+        add_route()
+    elif object == "pilot":
+        print("Pilot selected")    
+        add_pilot()        
+    else:
+        print("Input not recognised, try again 4")   
+        show_main_menu()    
+
 def add_flight():
     flight_code = input("Enter the Flight Code >> ")
-    route_not_valid = True
-    attempts = 0
-    while route_not_valid and attempts <= 3:
-        departure_airport = input("Enter the Departure Airport Code >> ")
-        arrival_airport = input("Enter the Arrival Airport Code >> ")
-        route_id = get_route_id(departure_airport, arrival_airport)                 # Derive route_id
-        if route_id == None:
-            print("Route "+ str(departure_airport) +" to "+ str(arrival_airport)+" not found, try again")
-            attempts = attempts+1
-        else:
-            route_not_valid = False    
-    if attempts>=3:
-        print("Too many incorrect inputs, return to main menu")
-        show_main_menu()        
-    departure_time_expected = input("Enter the Departure Time >> ")
-    validate_date_input(departure_time_expected)
-    print("Choose from the following pilots:")
-    display_pilot_list()
-    pilot_id = input("Enter the Pilot ID >> ")
-    insert_flight(flight_code, route_id, departure_time_expected, pilot_id)
-    show_main_menu()   
+    if validate_flight_exists(flight_code):
+        print("Flight already exists, no action taken")
+        show_main_menu()
+    else:    
+        route_not_valid = True
+        attempts = 0
+        while route_not_valid and attempts <= 3:
+            departure_airport = input("Enter the Departure Airport Code >> ")
+            arrival_airport = input("Enter the Arrival Airport Code >> ")
+            route_id = get_route_id(departure_airport, arrival_airport)                 # Derive route_id
+            if route_id == None:
+                print("Route "+ str(departure_airport) +" to "+ str(arrival_airport)+" not found, try again")
+                attempts = attempts+1
+            else:
+                route_not_valid = False    
+        if attempts>=3:
+            print("Too many incorrect inputs, return to main menu")
+            show_main_menu()        
+        departure_time_expected = input("Enter the Departure Time (format YYYY-MM-DD HH:MM) >> ")
+        if validate_date_input(departure_time_expected, "%Y-%m-%d %H:%M"):
+            print("Choose from the following pilots:")
+            display_pilot_list()
+            pilot_id = input("Enter the Pilot ID >> ")
+            insert_flight(flight_code, route_id, departure_time_expected, pilot_id)
+            show_main_menu()   
+        else: 
+            print("Input not recognised, start again")
+            add_flight()
+
 
 def add_airport():
     airport_code = input("Enter the Airport Code >> ")
-    airport_name = input("Enter the Airport Name >> ")
-    country = input("Enter the Country >> ")
-    insert_airport(airport_code, airport_name, country)
+    if validate_airport_input(airport_code):
+        print("Airport already exists, no action taken")
+        show_main_menu()
+    else:    
+        airport_name = input("Enter the Airport Name >> ")
+        country = input("Enter the Country >> ")
+        insert_airport(airport_code, airport_name, country)
+
 
 def add_route():
     airport_exists = False
@@ -340,15 +370,33 @@ def add_route():
     if attempts>=3:
         print("Too many incorrect inputs, return to main menu")
         show_main_menu()  
-    duration_minutes = input("Enter the Flight Duration >> ")
-    insert_route(departure_airport_id, arrival_airport_id, duration_minutes)
+    if validate_route_exists(departure_airport_id, arrival_airport_id):    
+        print("Route already exists, no action taken")
+        show_main_menu
+    else:    
+        duration_minutes = input("Enter the Flight Duration >> ")
+        if validate_numeric_input(duration_minutes):
+            insert_route(departure_airport_id, arrival_airport_id, duration_minutes)
+        else:
+            print("Invalid input, start again")
+            add_route()    
 
 def add_pilot():
     first_name = input("Enter the First Name >> ")
     last_name = input("Enter the Last Name >> ")
-    date_hired = input("Enter the Hire Date >> ")
-    insert_pilot(first_name, last_name, date_hired)
+    date_of_birth = input("Enter the Date of Birth (format YYYY-MM-DD) >> ")
+    if validate_date_input(date_of_birth, "%Y-%m-%d"):
+        date_hired = input("Enter the Hire Date (format YYYY-MM-DD) >> ")
+        if validate_date_input(date_hired, "%Y-%m-%d"):
+            insert_pilot(first_name, last_name, date_of_birth, date_hired)
+    else:
+        print("Date not recognised, start again")   
+        add_pilot()
 
+
+def show_delete_menu(object):
+    print("Coming soon, no action taken")
+    show_main_menu()
 
 # -------------------------- Validation Functions ------------------------------------- #
 
@@ -370,10 +418,29 @@ def validate_pilot_input(name):
     for row in cursor:
         if row[0] == "1":
             return True
-    return False        
+    return False
 
-def validate_date_input(date):
-    print("") 
+def validate_route_exists(departure_airport_id, arrival_airport_id):
+    cursor = conn.execute("SELECT '1' AS [Found] FROM route WHERE departure_airport_id = '"+str(departure_airport_id)+"' AND arrival_airport_id = '"+str(arrival_airport_id)+"';")
+    for row in cursor:
+        if row[0] == "1":
+            return True
+    return False
+
+def validate_flight_exists(flight_code):
+    cursor = conn.execute("SELECT '1' AS [Found] FROM flight WHERE flight_code = '"+str(flight_code)+"';")
+    for row in cursor:
+        if row[0] == "1":
+            return True
+    return False
+
+def validate_date_input(date, format):
+    valid = True
+    try:
+        valid = bool(datetime.strptime(date, format))
+    except ValueError:
+        valid = False
+    return valid    
 
 def validate_flight_input(flight_code):
     cursor = conn.execute("SELECT '1' AS [Found] FROM flight WHERE flight_code  = '" + flight_code + "';")
@@ -382,48 +449,21 @@ def validate_flight_input(flight_code):
             return True
     return False           
 
-def process_add_menu(choice):
-    if choice == "flight":
-        print("Flights selected")
-        add_flight()
-    elif choice == "destination":
-        print("Destination selected")
-        add_airport()
-    elif choice == "route":
-        print("Route selected")    
-        add_route()
-    elif choice == "pilot":
-        print("Pilot selected")    
-        add_pilot()        
-    elif choice == "5":
-        exit()
-    else:
-        print("Input not recognised, try again 4")   
-        show_main_menu()     
-
-def exit():
-    print("Goodbye")
-
-def show_delete_menu(object):
-    print("Coming soon, no action taken")
-    show_main_menu()
-    
+# ---------------------------- Transformations ------------------------------------- #   
 
 def calculate_arrival_time(departure_time, duration):
     split_date = re.split('[- :]', departure_time)
-    date_and_time = datetime.datetime(int(split_date[0]), int(split_date[1]), int(split_date[2]), int(split_date[3]), int(split_date[4]), int(split_date[5]))    
-    time_change = datetime.timedelta(minutes=duration) 
+    date_and_time = datetime(int(split_date[0]), int(split_date[1]), int(split_date[2]), int(split_date[3]), int(split_date[4]), 0)
+    time_change = timedelta(minutes=duration) 
     arrival_time = date_and_time + time_change 
     return str(arrival_time)
-
-
-
 
 def convert_to_table(data):
     table = tabulate(data, headers="keys", tablefmt="pipe")
     return table
 
-
+def exit():
+    print("Goodbye")
 
 # -------------------------- SQL DML Functions ------------------------------------- #
 
@@ -460,9 +500,9 @@ def insert_airport(airport_code, airport_name, country):
     conn.commit()
     print("Insert successful")    
 
-def insert_pilot(first_name, last_name, date_hired):
-    conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) \
-                 VALUES (NULL, '"+first_name+"','"+last_name+"','"+date_hired+"');")
+def insert_pilot(first_name, last_name, date_of_birth, date_hired):
+    conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
+                 VALUES (NULL, '"+first_name+"','"+last_name+"','"+date_of_birth+"','"+date_hired+"');")
     conn.commit()
     print("Insert successful")    
 
@@ -537,7 +577,5 @@ def display_flight_data(column, value):
 
 # -------------------------- Start of UI application ------------------------------------- #
 
-
-insert_route(1, 1, 1)
 show_main_menu()
 
