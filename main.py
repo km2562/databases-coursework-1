@@ -286,9 +286,11 @@ def show_amend_flight_menu():
         show_amend_flight_menu()    
 
 def process_amend_flight_menu(choice, id):
+    recalculate_arrival = "N"
     if choice == "1":
         value = input("Enter the Departure Time >> ")    
         column = "departure_time"
+        recalculate_arrival = input("Do you want the Arrival Time to be recalculated? Y/N >> ")
     elif choice == "2":
         value = input("Enter the Arrival Time >> ")
         column = "arrival_time"
@@ -303,6 +305,8 @@ def process_amend_flight_menu(choice, id):
     else:
         print("Input not recognised, try again 3")  
     update_flight(column, value, id)
+    if recalculate_arrival == "Y": 
+        update_arrival_time(id)
     show_main_menu()  
 
 def show_amend_route_menu():
@@ -412,7 +416,7 @@ def add_flight():
         while route_not_valid and attempts <= 3:
             departure_airport = input("Enter the Departure Airport Code >> ")
             arrival_airport = input("Enter the Arrival Airport Code >> ")
-            route_id = get_route_id(departure_airport, arrival_airport)                 # Derive route_id
+            route_id = get_route_id(departure_airport, arrival_airport)
             if route_id == None:
                 print("Route "+ str(departure_airport) +" to "+ str(arrival_airport)+" not found, try again")
                 attempts = attempts+1
@@ -452,12 +456,12 @@ def add_airport():
 def add_route():
     airport_exists = False
     attempts = 0
-    while airport_exists == False and attempts <= 3:
+    while not airport_exists and attempts <= 3:
         departure_airport_code = input("Enter the Departure Airport Code >> ")
         airport_exists = validate_airport_input(departure_airport_code)    
         print(departure_airport_code)   
         print(airport_exists)         
-        if airport_exists == False:
+        if not airport_exists:
             print(str(departure_airport_code) +" not found, try again")
             attempts = attempts+1
         else:
@@ -468,10 +472,10 @@ def add_route():
         print("Too many incorrect inputs, return to main menu")
         show_main_menu()  
     airport_exists = False    
-    while airport_exists == False and attempts <= 3:
+    while not airport_exists and attempts <= 3:
         arrival_airport_code = input("Enter the Arrival Airport Code >> ")
         airport_exists = validate_airport_input(arrival_airport_code)                
-        if airport_exists == False:
+        if not airport_exists:
             print(str(arrival_airport_code) +" not found, try again")
             attempts = attempts+1
         else:
@@ -594,52 +598,58 @@ def exit():
 # ------------------------------- Update ------------------------------------------- #
 
 def update_pilot(column, value, id):
-    conn.execute("UPDATE pilot SET "+column+" = '" + value + "' WHERE pilot_id = " + id +";")
+    pilot = conn.execute("UPDATE pilot SET "+column+" = '" + value + "' WHERE pilot_id = " + id +";")
     conn.commit()
-    print("Update successful") 
+    print(str(pilot.rowcount) +" pilot(s) updated") 
 
 def update_flight(column, value, id):
-    conn.execute("UPDATE flight SET "+column+" = '" + value + "' where flight_id = "+ id +";")    
+    flight = conn.execute("UPDATE flight SET "+column+" = '" + value + "' where flight_id = "+ id +";")    
     conn.commit()
-    print("Update successful")           
+    print(str(flight.rowcount) +" flight(s) updated") 
+
+def update_arrival_time(flight_id):
+    flight = conn.execute("UPDATE flight SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM route WHERE flight.route_id = route.route_id) || ' minute') WHERE flight_id = "+flight_id+";")         
+    conn.commit()
+    print(str(flight.rowcount) +" arrival time(s) updated") 
 
 def update_route(column, value, id):
-    conn.execute("UPDATE route SET "+column+" = '" + value + "' where route_id = "+ id +";")   
+    route = conn.execute("UPDATE route SET "+column+" = '" + value + "' where route_id = "+ id +";")   
     conn.commit()
-    print("Update successful")    
+    print(str(route.rowcount) +" route(s) updated")     
 
 def update_airport(column, value, id):
-    conn.execute("UPDATE airport SET "+column+" = '" + value + "' where route_id = "+ id +";")   
+    airport = conn.execute("UPDATE airport SET "+column+" = '" + value + "' where route_id = "+ id +";")   
     conn.commit()
-    print("Update successful")        
+    print(str(airport.rowcount) +" destination(s) updated")        
 
 # ------------------------------- Insert ------------------------------------------- #
 
 def insert_flight(flight_code, route_id, departure_time, pilot_id):
     duration_minutes = get_duration_minutes(route_id)
     arrival_time = calculate_arrival_time(departure_time, duration_minutes)
-    conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, arrival_time, pilot_id, status) \
+    flight = conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, arrival_time, pilot_id, status) \
                  VALUES (NULL, '"+str(flight_code)+"','"+str(route_id)+"','"+str(departure_time)+"','"+str(arrival_time)+"',CASE '"+str(pilot_id)+"' WHEN '-1' THEN NULL ELSE '"+str(pilot_id)+"' END, 'Not departed');")
     conn.commit()
-    print("Insert successful")
+    print(str(flight.rowcount) +" flight(s) inserted")
 
 def insert_airport(airport_code, airport_name, country):
-    conn.execute("INSERT INTO airport (airport_id, airport_code, airport_name, country) \
+    airport = conn.execute("INSERT INTO airport (airport_id, airport_code, airport_name, country) \
                  VALUES (NULL, '"+airport_code+"','"+airport_name+"','"+country+"');")
     conn.commit()
-    print("Insert successful")    
+    print(str(airport.rowcount) +" destinations(s) inserted")
 
 def insert_pilot(first_name, last_name, date_of_birth, date_hired):
-    conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
+    pilot = conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
                  VALUES (NULL, '"+first_name+"','"+last_name+"','"+date_of_birth+"','"+date_hired+"');")
     conn.commit()
-    print("Insert successful")    
+    print(str(pilot.rowcount) +" pilot(s) inserted")
 
 def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
-    conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) \
+    route = conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) \
                  VALUES (null, "+str(departure_airport_id)+","+str(arrival_airport_id)+","+str(duration_minutes)+");")
     conn.commit()
-    print("Insert successful")        
+    print(str(route.rowcount) +" route(s) inserted")
+      
 
 # ------------------------------- Select ------------------------------------------- #
 
