@@ -13,16 +13,16 @@ conn.execute("DROP TABLE IF EXISTS airport;")
 conn.execute("DROP TABLE IF EXISTS route;")
 conn.execute("DROP VIEW IF EXISTS flight_and_pilot;")
 
-conn.execute("CREATE TABLE airport (airport_id INTEGER PRIMARY KEY NOT NULL, airport_name VARCHAR(50), airport_code VARCHAR(3), country VARCHAR(50))")
-conn.execute("CREATE TABLE pilot (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50), last_name VARCHAR(50), date_of_birth DATE, date_hired DATE)")
-conn.execute("CREATE TABLE route (route_id INTEGER PRIMARY KEY NOT NULL, departure_airport_id INTEGER, arrival_airport_id INTEGER, duration_minutes INTEGER)")
-conn.execute("CREATE TABLE flight (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10), route_id INTEGER, departure_time DATETIME, arrival_time DATETIME, pilot_id INTEGER, status VARCHAR(15));")
+conn.execute("CREATE TABLE airport (airport_id INTEGER PRIMARY KEY NOT NULL, airport_name VARCHAR(50) NOT NULL, airport_code VARCHAR(3) NOT NULL, country VARCHAR(50) NOT NULL)")
+conn.execute("CREATE TABLE pilot (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, date_of_birth DATE NOT NULL, date_hired DATE NULL)")
+conn.execute("CREATE TABLE route (route_id INTEGER PRIMARY KEY NOT NULL, departure_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, arrival_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, duration_minutes INTEGER NULL)")
+conn.execute("CREATE TABLE flight (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status VARCHAR(15) DEFAULT 'Not departed' NULL);")
 
 print ("Tables created successfully")
 
 # ---------------------------Create Views --------------------------------#
 
-conn.execute("CREATE VIEW flight_and_pilot AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilot.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(first_name || ' ' || last_name, 'Unassigned') AS [pilot_name], status FROM flight LEFT JOIN pilot ON flight.pilot_id = pilot.pilot_id")
+conn.execute("CREATE VIEW flight_and_pilot AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilot.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(first_name || ' ' || last_name, 'Unassigned') AS [pilot_name], date_of_birth, date_hired, status FROM flight LEFT JOIN pilot ON flight.pilot_id = pilot.pilot_id")
 
 
 # ----------------------------- Insert initial data ---------------------------- #
@@ -70,10 +70,10 @@ conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (10, 6, 1, 121);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (11, 7, 1, 52);")
 
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (1, 'FL1234', 1, '2025-05-10 07:10', 2, 'Not departed');")
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (2, 'FL4321', 8, '2025-05-11 10:50', 2, 'Not departed');")
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (3, 'FL2345', 2, '2025-05-11 08:30', 1, 'Not departed');")
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (4, 'FL5432', 9, '2025-05-12 09:15', 1, 'Not departed');")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (1, 'FL1234', 1, '2025-05-10 07:10', 2);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (2, 'FL4321', 8, '2025-05-11 10:50', 2);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (3, 'FL2345', 2, '2025-05-11 08:30', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (4, 'FL5432', 9, '2025-05-12 09:15', 1);")
 
 # Calculate arrival times for all flights using the duration_minutes from route
 conn.execute("UPDATE flight SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM route WHERE flight.route_id = route.route_id) || ' minute') WHERE 1=1")
@@ -97,7 +97,8 @@ def show_main_menu():
     print("2) Pilots")
     print("3) Destinations")
     print("4) Routes")
-    print("5) Exit")
+    print("5) Summaries")
+    print("6) Exit")
 
     choice = input("Enter your option (mainmenu) >> ")
     process_menu_choice(choice)
@@ -110,12 +111,56 @@ def process_menu_choice(choice):
     elif choice == "3":
         show_action_menu("destination")
     elif choice == "4":
-        show_action_menu("route")        
+        show_action_menu("route") 
     elif choice == "5":
+        show_summary_menu()                 
+    elif choice == "6":
         exit()
     else:
         print("Input not recognised, try again")   
         show_main_menu() 
+
+def show_summary_menu():
+    print("===============================")
+    print("Choose what you want to see:")
+    print("1) Number of flights leaving today")
+    print("2) Number of flights for a Pilot")
+    print("3) Number of flights leaving from an Airport")
+    print("4) Go Back")
+    choice = input("Enter your option (summarymenu) >> ")
+    process_summary_menu_choice(choice)
+
+def process_summary_menu_choice(choice):
+    if choice == "1":
+        count = get_flight_count_for_date("departure_time", datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
+        if count > 0:
+            print("There are "+str(count)+" flight(s) leaving today")
+        else:
+            print("No flights are leaving today")
+        show_main_menu()        
+    elif choice == "2":
+        value = input("Enter the Pilot Name >> ")
+        column = "flight.pilot_name"
+        count = get_flight_count(column, value)
+        if count > 0:
+            print("There are "+str(count)+" flight(s) for pilot "+ value)
+        else:
+            print("There are no flights for pilot "+ value)
+        show_main_menu()          
+    elif choice == "3":
+        value = input("Enter the Aiport Code >> ")
+        column = "dep.airport_code"
+        count = get_flight_count(column, value)
+        if count > 0:
+            print("There are "+str(count)+" flight(s) leaving from "+ value)
+        else:
+            print("There are no flights leaving from "+ value)
+        show_main_menu() 
+    elif choice == "4":
+        show_main_menu()   
+    else:
+        print("Input not recognised, try again")   
+        show_main_menu()         
 
 def show_action_menu(object):
     print("===============================")
@@ -361,7 +406,6 @@ def process_amend_destination_menu(choice, id):
 
 def show_amend_pilot_menu():
     print("Choose a pilot to amend")
-    display_pilot_list()
     id = input("Enter the Pilot ID >> ")
     if validate_numeric_input(id):
         print("What do you want to change?")  
@@ -429,8 +473,6 @@ def add_flight():
         if validate_date_input(departure_time, "%Y-%m-%d %H:%M"):
             add_pilot = input("Do you want to assign the pilot now? Y/N >> ")
             if add_pilot == "Y":
-                print("Choose from the following pilots:")
-                display_pilot_list()
                 pilot_id = input("Enter the Pilot ID >> ")
             else: 
                 pilot_id = -1    
@@ -598,12 +640,16 @@ def exit():
 # ------------------------------- Update ------------------------------------------- #
 
 def update_pilot(column, value, id):
-    pilot = conn.execute("UPDATE pilot SET "+column+" = '" + value + "' WHERE pilot_id = " + id +";")
+    sql = "UPDATE pilot SET "+column+" = ? WHERE pilot_id = " + id +";"
+    param = (''+str(value)+'',)    
+    pilot = conn.execute(sql, param)
     conn.commit()
     print(str(pilot.rowcount) +" pilot(s) updated") 
 
 def update_flight(column, value, id):
-    flight = conn.execute("UPDATE flight SET "+column+" = '" + value + "' where flight_id = "+ id +";")    
+    sql = "UPDATE flight SET "+column+" = ? where flight_id = "+ id +";"
+    param = (''+str(value)+'',)   
+    flight = conn.execute(sql, param)    
     conn.commit()
     print(str(flight.rowcount) +" flight(s) updated") 
 
@@ -613,40 +659,54 @@ def update_arrival_time(flight_id):
     print(str(flight.rowcount) +" arrival time(s) updated") 
 
 def update_route(column, value, id):
-    route = conn.execute("UPDATE route SET "+column+" = '" + value + "' where route_id = "+ id +";")   
+    sql = "UPDATE route SET "+column+" = ? where route_id = "+ id +";"
+    param = (''+str(value)+'',) 
+    route = conn.execute(sql, param)   
     conn.commit()
     print(str(route.rowcount) +" route(s) updated")     
 
 def update_airport(column, value, id):
-    airport = conn.execute("UPDATE airport SET "+column+" = '" + value + "' where route_id = "+ id +";")   
+    sql = "UPDATE airport SET "+column+" = ? where route_id = "+ id +";"
+    param = (''+str(value)+'',) 
+    airport = conn.execute(sql, param)   
     conn.commit()
     print(str(airport.rowcount) +" destination(s) updated")        
 
 # ------------------------------- Insert ------------------------------------------- #
 
 def insert_flight(flight_code, route_id, departure_time, pilot_id):
+
     duration_minutes = get_duration_minutes(route_id)
     arrival_time = calculate_arrival_time(departure_time, duration_minutes)
-    flight = conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, arrival_time, pilot_id, status) \
-                 VALUES (NULL, '"+str(flight_code)+"','"+str(route_id)+"','"+str(departure_time)+"','"+str(arrival_time)+"',CASE '"+str(pilot_id)+"' WHEN '-1' THEN NULL ELSE '"+str(pilot_id)+"' END, 'Not departed');")
+    param = (''+str(flight_code)+'',''+str(route_id)+'',''+str(departure_time)+'',''+str(arrival_time)+'',''+str(pilot_id)+'',''+str(pilot_id)+'',) 
+    sql = "INSERT INTO flight (flight_id, flight_code, route_id, departure_time, arrival_time, pilot_id) \
+           VALUES (NULL, ?, ?, ?, ?, CASE ? WHEN '-1' THEN NULL ELSE ? END);"
+    flight = conn.execute(sql, param)
     conn.commit()
     print(str(flight.rowcount) +" flight(s) inserted")
 
 def insert_airport(airport_code, airport_name, country):
-    airport = conn.execute("INSERT INTO airport (airport_id, airport_code, airport_name, country) \
-                 VALUES (NULL, '"+airport_code+"','"+airport_name+"','"+country+"');")
+    sql = "INSERT INTO airport (airport_id, airport_code, airport_name, country) \
+                 VALUES (NULL, ?, ?, ?);"
+    param = (''+str(airport_code)+'',''+str(airport_name)+'',''+str(country)+'',)   
+    airport = conn.execute(sql, param)
     conn.commit()
     print(str(airport.rowcount) +" destinations(s) inserted")
 
 def insert_pilot(first_name, last_name, date_of_birth, date_hired):
-    pilot = conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
-                 VALUES (NULL, '"+first_name+"','"+last_name+"','"+date_of_birth+"','"+date_hired+"');")
+    sql = "INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
+                 VALUES (NULL, ?, ?, ?, ?);"
+    param = (''+str(first_name)+'',''+str(last_name)+'',''+str(date_of_birth)+'',''+str(date_hired)+'',) 
+    pilot = conn.execute(sql, param)
     conn.commit()
     print(str(pilot.rowcount) +" pilot(s) inserted")
 
+
 def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
-    route = conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) \
-                 VALUES (null, "+str(departure_airport_id)+","+str(arrival_airport_id)+","+str(duration_minutes)+");")
+    sql = "INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) \
+                 VALUES (null, ?, ?, ?);"
+    param = (''+str(departure_airport_id)+'', ''+str(arrival_airport_id)+'', ''+str(duration_minutes)+'', ) 
+    route = conn.execute(sql, param)
     conn.commit()
     print(str(route.rowcount) +" route(s) inserted")
       
@@ -654,10 +714,11 @@ def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
 # ------------------------------- Select ------------------------------------------- #
 
 def get_route_id(departure_airport_code, arrival_airport_code):
-    route = conn.execute("SELECT route_id FROM route, airport AS dep, airport AS arr \
+    sql = "SELECT route_id FROM route, airport AS dep, airport AS arr \
                          WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
-                         AND dep.airport_code = '"+departure_airport_code+"' \
-                         AND arr.airport_code = '"+arrival_airport_code+"';")
+                         AND dep.airport_code = ? AND arr.airport_code = ?;"
+    param = (''+str(departure_airport_code)+'', ''+str(arrival_airport_code)+'',)   
+    route = conn.execute(sql, param)
     for row in route:
         return row[0]
     return None
@@ -669,24 +730,49 @@ def get_duration_minutes(route_id):
     return None        
 
 def get_airport_id(airport_code):
-    airport = conn.execute("SELECT airport_id FROM airport WHERE airport_code = '"+airport_code+"';")
+    sql = "SELECT airport_id FROM airport WHERE airport_code = ?;"
+    param = (''+str(airport_code)+'',) 
+    airport = conn.execute(sql, param)  
     for row in airport:
         return row[0]
     return None
 
 def get_flight_count(column, value):
-    flight = conn.execute("SELECT COUNT(*) \
+    sql = "SELECT COUNT(*) AS [Count] \
+                          FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
+                          WHERE route.route_id = flight.route_id \
+                          AND route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
+                          AND "+str(column)+" = ?;"
+    param = (''+str(value)+'',)
+    flight = conn.execute(sql, param) 
+    print(sql)
+    print(param)
+    print(convert_to_table(flight))
+    for row in flight:
+        return row[0]
+    return None
+
+def get_flight_count_for_date(column, date_value):
+    split_date = re.split('[- :]', date_value)
+    start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
+    add_day = timedelta(days=1)
+    end_date = start_date+add_day
+    sql = "SELECT COUNT(*) AS Count \
                           FROM flight_and_pilot AS flight, route, airport AS source, airport AS dest \
                           WHERE route.route_id = flight.route_id \
                           AND route.departure_airport_id = source.airport_id AND route.arrival_airport_id = dest.airport_id \
-                          AND "+str(column)+" = "+str(value)+";")    
+                          AND "+str(column)+" BETWEEN ? AND ?;"
+    param = (''+str(start_date)+'', ''+str(end_date)+'',)
+    flight = conn.execute(sql, param)   
     for row in flight:
         return row[0]
     return None
 
 def get_route(column, value):
-    route = conn.execute("SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport], arr.airport_code AS [Arrival Airport] FROM route, airport AS dep, airport AS arr \
-                         WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id AND "+column+" = '"+str(value)+"';")
+    sql = "SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport], arr.airport_code AS [Arrival Airport] FROM route, airport AS dep, airport AS arr \
+                         WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id AND "+column+" = ?';"
+    param = (''+str(value)+'',)
+    route = conn.execute(sql, param)  
     table = convert_to_table(route)
     if not table:
         print("No results found")
@@ -711,24 +797,20 @@ def display_route_list():
         print(table) 
 
 def display_route_list(column, value):
-    route = conn.execute("SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport], arr.airport_code AS [Arrival Airport], duration_minutes AS [Duration] FROM route, airport AS dep, airport AS arr \
-                         WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id AND "+column+" = '"+value+"';")
+    sql = "SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport], arr.airport_code AS [Arrival Airport], duration_minutes AS [Duration] FROM route, airport AS dep, airport AS arr \
+                         WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id AND "+column+" = ?;"
+    param = (''+str(value)+'',)
+    route = conn.execute(sql, param)  
     table = convert_to_table(route)
     if not table:
         print("No results found")
     else:    
         print(table)     
 
-def display_pilot_list():
-    pilot = conn.execute("SELECT pilot_id AS [Pilot ID], first_name || ' ' || last_name AS [Pilot Name] FROM pilot;")
-    table = convert_to_table(pilot)
-    if not table:
-        print("No results found")
-    else:    
-        print(table)
-
 def display_pilot_list(column, value):
-    pilot = conn.execute("SELECT pilot_id AS [Pilot ID], first_name || ' ' || last_name AS [Pilot Name] FROM pilot WHERE "+column+" = '"+value+"';")
+    sql = "SELECT DISTINCT pilot_id AS [Pilot ID], pilot_name AS [Pilot Name], date_of_birth AS [Date Of Birth], date_hired AS [Date Hired] FROM flight_and_pilot AS flight WHERE "+column+" = ?;"
+    param = (''+str(value)+'',)  
+    pilot = conn.execute(sql, param)  
     table = convert_to_table(pilot)
     if not table:
         print("No results found")
@@ -744,7 +826,10 @@ def display_airport_list():
         print(table)
 
 def display_airport_list(column, value):
-    airport = conn.execute("SELECT airport_id AS [Airport ID], airport_name AS [Airport Name], airport_code AS [Airport Code], country AS [Country] FROM airport WHERE "+column+" = '"+value+"';")
+    sql = "SELECT airport_id AS [Airport ID], airport_name AS [Airport Name], airport_code AS [Airport Code], country AS [Country] \
+        FROM airport WHERE "+column+" = ?;"
+    param = (''+str(value)+'',)
+    airport = conn.execute(sql, param) 
     print(convert_to_table(airport))      
 
 def display_flight_data_for_day(column, date_value):
@@ -752,24 +837,26 @@ def display_flight_data_for_day(column, date_value):
     start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
     add_day = timedelta(days=1)
     end_date = start_date+add_day
-    flight = conn.execute("SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], source.airport_name AS [Departure Airport], dest.airport_name AS [Arrival Airport], \
+    sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], source.airport_name AS [Departure Airport], dest.airport_name AS [Arrival Airport], \
                           departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
                           FROM flight_and_pilot AS flight, route, airport AS source, airport AS dest \
                           WHERE route.route_id = flight.route_id \
                           AND route.departure_airport_id = source.airport_id AND route.arrival_airport_id = dest.airport_id \
-                          AND "+str(column)+" BETWEEN '"+str(start_date)+"' AND '"+str(end_date)+"';")   
+                          AND "+str(column)+" BETWEEN ? AND ?;"
+    param = (''+str(start_date)+'',''+str(end_date)+'',)
+    flight = conn.execute(sql, param)    
     print(convert_to_table(flight))
 
 
 def display_flight_data_string(column, value):
-    print("Column: " + str(column))
-    print("Value: " + str(value))
-    flight = conn.execute("SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
+    sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
                           departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
                           FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
                           WHERE route.route_id = flight.route_id \
                           AND route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
-                          AND "+str(column)+" = '"+str(value)+"';")                      
+                          AND "+str(column)+" = ?;"
+    param = (''+str(value)+'',)
+    flight = conn.execute(sql, param)                       
     
     print("===============================")
     table = convert_to_table(flight)
@@ -779,14 +866,14 @@ def display_flight_data_string(column, value):
         print(table)
 
 def display_flight_data_id(column, value):
-    print("Column: " + str(column))
-    print("Value: " + str(value))
-    flight = conn.execute("SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
+    sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
                           departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
                           FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
                           WHERE route.route_id = flight.route_id \
                           AND route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
-                          AND "+str(column)+" = "+str(value)+";")                      
+                          AND "+str(column)+" = ?;"
+    param = (''+str(value)+'',)
+    flight = conn.execute(sql, param)                      
     
     print("===============================")
     table = convert_to_table(flight)
@@ -795,6 +882,7 @@ def display_flight_data_id(column, value):
     else:    
         print(table) 
 
+'''
 def select_view():
     flight = conn.execute("SELECT * FROM flight_and_pilot")
     table = convert_to_table(flight)
@@ -802,17 +890,20 @@ def select_view():
         print("No results found")
     else:    
         print(table)
-
+'''
 
 # ---------------------Delete ------------------------#
 
 def delete_flight(flight_code):
-    flight = conn.execute("DELETE FROM flight WHERE flight_code = '"+flight_code+"';")
+    sql = "DELETE FROM flight WHERE flight_code = ?;"
+    param = (''+str(flight_code)+'',)
+    flight = conn.execute(sql,param)
     conn.commit()
     print(str(flight.rowcount) +" flight(s) deleted")
 
 # -------------------------- Start of UI application ------------------------------------- #
 
-select_view()
+get_flight_count("dep.airport_code", "LGW")
+
 show_main_menu()
 
