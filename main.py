@@ -16,7 +16,7 @@ conn.execute("DROP VIEW IF EXISTS flight_and_pilot;")
 conn.execute("CREATE TABLE airport (airport_id INTEGER PRIMARY KEY NOT NULL, airport_name VARCHAR(50) NOT NULL, airport_code VARCHAR(3) NOT NULL, country VARCHAR(50) NOT NULL)")
 conn.execute("CREATE TABLE pilot (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, pilot_name VARCHAR(100) GENERATED ALWAYS AS (first_name || ' ' || last_name) VIRTUAL NOT NULL, date_hired DATE NULL)")
 conn.execute("CREATE TABLE route (route_id INTEGER PRIMARY KEY NOT NULL, departure_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, arrival_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, duration_minutes INTEGER NOT NULL)")
-conn.execute("CREATE TABLE flight (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status VARCHAR(15) DEFAULT 'Not departed' NULL);")
+conn.execute("CREATE TABLE flight (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status VARCHAR(15) DEFAULT 'On Time' NULL);")
 
 print ("Tables created successfully")
 
@@ -65,11 +65,19 @@ conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (9, 5, 1, 178);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (10, 6, 1, 121);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (11, 7, 1, 52);")
+conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (12, 8, 1, 100);")
 
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (1, 'FL1234', 1, '2025-05-10 07:10', NULL);")
-conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (2, 'FL4321', 8, '2025-05-11 10:50', 2);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (1, 'FL1234', 1, '2025-05-10 07:10', NULL, 'Departed');")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (2, 'FL4321', 8, '2025-05-11 10:50', 2, 'Late');")
 conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (3, 'FL2345', 2, '2025-05-11 08:30', 1);")
 conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (4, 'FL5432', 9, '2025-05-12 09:15', 1);")
+
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (5, 'FL3456', 3, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (6, 'FL6543', 10, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (7, 'FL4567', 4, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (8, 'FL7654', 11, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (9, 'FL5678', 5, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (10, 'FL8765', 12, '2025-05-12 09:15', 1);")
 
 # Calculate arrival times for all flights using the duration_minutes from route
 conn.execute("UPDATE flight SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM route WHERE flight.route_id = route.route_id) || ' minute') WHERE 1=1")
@@ -732,7 +740,7 @@ def insert_pilot(first_name, last_name, date_hired):
     return pilot.lastrowid
 
 def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
-    sql = "INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (null, ?, ?, ?);"
+    sql = "INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (NULL, ?, ?, ?);"
     param = (''+str(departure_airport_id)+'', ''+str(arrival_airport_id)+'', ''+str(duration_minutes)+'', ) 
     route = conn.execute(sql, param)
     conn.commit()
