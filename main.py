@@ -14,7 +14,7 @@ conn.execute("DROP TABLE IF EXISTS route;")
 conn.execute("DROP VIEW IF EXISTS flight_and_pilot;")
 
 conn.execute("CREATE TABLE airport (airport_id INTEGER PRIMARY KEY NOT NULL, airport_name VARCHAR(50) NOT NULL, airport_code VARCHAR(3) NOT NULL, country VARCHAR(50) NOT NULL)")
-conn.execute("CREATE TABLE pilot (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, pilot_name VARCHAR(100) GENERATED ALWAYS AS (first_name || ' ' || last_name) VIRTUAL NOT NULL, date_of_birth DATE NOT NULL, date_hired DATE NULL)")
+conn.execute("CREATE TABLE pilot (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, pilot_name VARCHAR(100) GENERATED ALWAYS AS (first_name || ' ' || last_name) VIRTUAL NOT NULL, date_hired DATE NULL)")
 conn.execute("CREATE TABLE route (route_id INTEGER PRIMARY KEY NOT NULL, departure_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, arrival_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, duration_minutes INTEGER NULL)")
 conn.execute("CREATE TABLE flight (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status VARCHAR(15) DEFAULT 'Not departed' NULL);")
 
@@ -22,23 +22,21 @@ print ("Tables created successfully")
 
 # ---------------------------Create Views --------------------------------#
 
-conn.execute("CREATE VIEW flight_and_pilot AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilot.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(pilot_name, 'Unassigned') AS [pilot_name], date_of_birth, date_hired, status FROM flight LEFT JOIN pilot ON flight.pilot_id = pilot.pilot_id")
-
+conn.execute("CREATE VIEW flight_and_pilot AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilot.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(pilot_name, 'Unassigned') AS [pilot_name], date_hired, status FROM flight LEFT JOIN pilot ON flight.pilot_id = pilot.pilot_id")
 
 # ----------------------------- Insert initial data ---------------------------- #
 
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (1, 'Joseph','Walters','1970-05-06','2015-06-17');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (2, 'Jo','Walters','1989-12-08','2022-05-31');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (3, 'Alan','Thomson','1981-08-05','2007-12-17');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (4, 'Ian','Jackson','1988-12-26','2022-04-14');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (5, 'Samantha','North','1973-10-27','2013-07-19');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (6, 'Austin','Redman','1980-09-25','2024-11-27');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (7, 'Bruce','Crowther','1981-11-08','2007-06-16');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (8, 'Peter','Newman','1983-06-10','2017-09-19');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (9, 'George','Langford','1987-09-11','2022-05-03');")
-conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) VALUES (10, 'Nina','Palmer','1976-04-13','2016-05-14');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (1, 'Joseph','Walters','2015-06-17');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (2, 'Jo','Walters','2022-05-31');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (3, 'Alan','Thomson','2007-12-17');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (4, 'Ian','Jackson','2022-04-14');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (5, 'Samantha','North','2013-07-19');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (6, 'Austin','Redman','2024-11-27');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (7, 'Bruce','Crowther','2007-06-16');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (8, 'Peter','Newman','2017-09-19');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (9, 'George','Langford','2022-05-03');")
+conn.execute("INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (10, 'Nina','Palmer','2016-05-14');")
 
-#https://www.iata.org/en/publications/directories/code-search/?
 conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, country) VALUES (1, 'London Gatwick', 'LGW', 'UK');")
 conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, country) VALUES (2, 'London Luton', 'LTN', 'UK');")
 conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, country) VALUES (3, 'London Heathrow', 'LHR', 'UK');")
@@ -55,8 +53,7 @@ conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, count
 conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, country) VALUES (14, 'Rome Griffiss Intl', 'RME', 'Italy');")
 conn.execute("INSERT INTO airport (airport_id, airport_name, airport_code, country) VALUES (15, 'Malaga Airport', 'AGP', 'Spain');")
 
-# LGW ->
-conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (1, 1, 25, 139);")
+conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (1, 1, 4, 139);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (2, 1, 5, 178);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (3, 1, 6, 121);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (4, 1, 7, 52);")
@@ -64,7 +61,6 @@ conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (6, 1, 9, 52);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (7, 1, 10, 443);")
 
-# <- LGW
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (8, 4, 1, 139);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (9, 5, 1, 178);")
 conn.execute("INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (10, 6, 1, 121);")
@@ -78,17 +74,18 @@ conn.execute("INSERT INTO flight (flight_id, flight_code, route_id, departure_ti
 # Calculate arrival times for all flights using the duration_minutes from route
 conn.execute("UPDATE flight SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM route WHERE flight.route_id = route.route_id) || ' minute') WHERE 1=1")
 
+# Commit the changes to the database
 conn.commit()
 
+# Messages to show end of seeding
 print("Records created successfully")
 print("Total number of rows created :", conn.total_changes)
 print("\n");
 
 # ---------------------------- Functions ---------------------------------------- #
 # -------------------------- Menu Functions ------------------------------------- #
-# choice = numerical value of the option chosen
-# object = the string value of the option chosen
 
+# Function to display the main menu
 def show_main_menu():
     # Show main menu
     print("===============================")
@@ -100,9 +97,10 @@ def show_main_menu():
     print("5) Summaries")
     print("6) Exit")
 
-    choice = input("Enter your option (mainmenu) >> ")
+    choice = input("Enter your option >> ")
     process_menu_choice(choice)
 
+# Function to process what has been chosen from the main menu
 def process_menu_choice(choice):
     if choice == "1":
         show_action_menu("flight")
@@ -120,6 +118,7 @@ def process_menu_choice(choice):
         print("Input not recognised, try again")   
         show_main_menu() 
 
+# Function to show the Summary Menu if selected from the Main Menu
 def show_summary_menu():
     print("===============================")
     print("Choose what you want to see:")
@@ -130,6 +129,7 @@ def show_summary_menu():
     choice = input("Enter your option (summarymenu) >> ")
     process_summary_menu_choice(choice)
 
+# Function to process the choice from the Summary Menu
 def process_summary_menu_choice(choice):
     if choice == "1":
         count = get_flight_count_for_date("departure_time", datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
@@ -160,8 +160,9 @@ def process_summary_menu_choice(choice):
         show_main_menu()   
     else:
         print("Input not recognised, try again")   
-        show_main_menu()         
+        show_summary_menu()         
 
+# Function to show the Action Menu if selected from the Main Menu
 def show_action_menu(object):
     print("===============================")
     print("Choose what you want to do:")
@@ -189,14 +190,15 @@ def process_action_choice(object, choice):
         print("Input not recognised, try again")  
         show_action_menu(object)  
 
+# Function to show the View Menu if selected from the Main Menu
 def show_view_menu(object):
     print("===============================")
     print("What do you want to search with:")
     if object == "flight":
         print("1) Flight Code")
-        print("2) Departure Location")
-        print("3) Arrival Location")
-        print("4) Pilot")
+        print("2) Departure Airport Code")
+        print("3) Arrival Airport Code")
+        print("4) Pilot Name")
         print("5) Departure Date")
         print("6) Arrival Date")
         print("7) Go back")  
@@ -214,20 +216,12 @@ def show_view_menu(object):
         choice = input("Enter your option >> ")
         process_view_menu_destination(choice, object)
     elif object == "route":
-        print("1) Departure Airport")
-        print("2) Arrival Airport")
+        print("1) Departure Airport Code")
+        print("2) Arrival Airport Code")
         print("3) Go back")
         choice = input("Enter your option >> ")
         process_view_menu_route(choice, object)
 
-def process_view_menu_pilot(choice, object):
-    if choice == "1":
-        value = input("Enter the Pilot Name >> ")
-        column = "flight.pilot_name"
-    if choice == "2":
-        show_action_menu(object)
-    display_pilot_list(column, value)
-    show_main_menu()
 
 def process_view_menu_destination(choice, object):
     if choice == "1":
@@ -236,27 +230,38 @@ def process_view_menu_destination(choice, object):
     elif choice == "2":
         value = input("Enter the Country >> ")
         column = "country"  
-    if choice == "3":
-        show_action_menu(object)                 
+    elif choice == "3":
+        show_action_menu(object)   
+    else:
+        print("Input not recognised, try again")
+        show_view_menu(object)                           
     display_airport_list(column, value)
     show_main_menu()
 
 def process_view_menu_route(choice, object):
     if choice == "1":
-        value = input("Enter the Departure Airport >> ")
+        value = input("Enter the Departure Airport Code >> ")
         column = "arr.airport_code"
-    if choice == "2":
-        value = input("Enter the Arrival Airport >> ")
+    elif choice == "2":
+        value = input("Enter the Arrival Airport Code >> ")
         column = "arr.airport_code"      
-    if choice == "3":
-        show_action_menu(object)         
+    elif choice == "3":
+        show_action_menu(object)   
+    else:
+        print("Input not recognised, try again")
+        show_view_menu(object)        
     display_route_list(column, value)
     show_main_menu()
 
 def process_view_menu_pilot(choice, object):
     if choice == "1":
         value = input("Enter the Pilot Name >> ")
-        column = "flight.pilot_name"
+        column = "pilot_name"
+    elif choice == "2":
+        show_action_menu(object)   
+    else:
+        print("Input not recognised, try again")
+        show_view_menu(object)                
     display_pilot_list(column, value)           
     show_main_menu()
 
@@ -267,10 +272,10 @@ def process_view_menu(choice, object):
         value = input("Enter the Flight Code >> ")
         column = "flight.flight_code"
     elif choice == "2":
-        value = input("Enter the Departure Location >> ")
+        value = input("Enter the Departure Airport Code >> ")
         column = "dep.airport_code"
     elif choice == "3":
-        value = input("Enter the Arrival Location >> ")    
+        value = input("Enter the Arrival Airport Code >> ")    
         column = "arr.airport_code"
     elif choice == "4":
         value = input("Enter the Pilot Name >> ")
@@ -288,7 +293,7 @@ def process_view_menu(choice, object):
             print("Input not recognised, try again")
             process_view_menu(choice, object)
         else:
-            column = "flight.arrival_time_expected"
+            column = "flight.arrival_time"
     elif choice == "7":
         show_action_menu(object)    
     else:
@@ -298,9 +303,9 @@ def process_view_menu(choice, object):
 
 def process_view_choice(column, value):
     if "time" in column:
-        display_flight_data_for_day(column, value)
+        display_flight_data_for_date(column, value)
     else:
-        display_flight_data_string(column, value)
+        display_flight_data(column, value)
     show_main_menu()
 
 def show_amend_menu(object):
@@ -317,7 +322,8 @@ def show_amend_flight_menu():
     print("Choose a flight to amend")
     id = input("Enter the Flight ID >> ")
     if validate_numeric_input(id):
-        if display_flight_data_id("flight_id", id):
+        if display_flight_data("flight_id", id):
+            print("===============================")
             print("Choose an attribute to update")
             print("1) Departure Time")
             print("2) Arrival Time")
@@ -333,10 +339,11 @@ def show_amend_flight_menu():
         print("Input not recognised, try again")    
         show_amend_flight_menu()    
 
+# Function to show the Amend Menu if selected from the Main Menu
 def process_amend_flight_menu(choice, id):
     recalculate_arrival = "N"
     if choice == "1":
-        value = input("Enter the Departure Time >> ")    
+        value = input("Enter the Departure Time (format YYYY-MM-DD HH:MM) >> ")    
         column = "departure_time"
         recalculate_arrival = input("Do you want the Arrival Time to be recalculated? Y/N >> ")
     elif choice == "2":
@@ -355,18 +362,22 @@ def process_amend_flight_menu(choice, id):
     update_flight(column, value, id)
     if recalculate_arrival == "Y": 
         update_arrival_time(id)
+    display_flight_data("flight_id", id)    
     show_main_menu()  
 
 def show_amend_route_menu():
     print("Choose a route to amend")
     id = input("Enter the Route ID >> ")
     if validate_numeric_input(id):
-        display_route_list("route.route_id", id) 
-        print("What do you want to change?")   
-        print("1) Duration")
-        print("2) Go back")  
-        choice = input("Enter your option (amendmenuroute) >> ")
-        process_amend_route_menu(choice, id) 
+        if display_route_list("route.route_id", id): 
+            print("What do you want to change?")   
+            print("1) Duration")
+            print("2) Go back")  
+            choice = input("Enter your option (amendmenuroute) >> ")
+            process_amend_route_menu(choice, id) 
+        else:
+            print("Route not found")
+            show_main_menu()                
     else:
         print("Input not recognised, try again")    
         show_amend_route_menu()         
@@ -374,18 +385,24 @@ def show_amend_route_menu():
 def process_amend_route_menu(choice, id):
     if choice == "1":
         value = input("Enter the Duration >> ")    
-        column = "duration_minutes"
+        if validate_numeric_input(value):
+            column = "duration_minutes"
+        else: 
+            print("Input not recognised, try again")
+            show_amend_route_menu()     
     elif choice == "2":
         show_action_menu("route")    
     else:
-        print("Input not recognised, try again 3")  
-    update_route(column, value, id)   
+        print("Input not recognised, try again 3") 
+        show_amend_route_menu() 
+    update_route(column, value, id) 
+    display_route_list("route.route_id", id)  
     show_main_menu()  
 
 def show_amend_destination_menu():
     print("Choose an airport to amend: ")
     id = input("Enter the Airport ID >> ")
-    if validate_numeric_input(id):
+    if display_airport_list("airport_id", id):
         print("What do you want to change?")  
         print("1) Airport Name")
         print("2) Go back")  
@@ -402,8 +419,10 @@ def process_amend_destination_menu(choice, id):
     elif choice == "2":
         show_action_menu("destination")    
     else:
-        print("Input not recognised, try again 3")  
-    update_route(column, value, id)  
+        print("Input not recognised, try again 3") 
+        show_amend_destination_menu() 
+    update_airport(column, value, id) 
+    display_airport_list("airport_id", id) 
     show_main_menu()  
 
 def show_amend_pilot_menu():
@@ -413,7 +432,8 @@ def show_amend_pilot_menu():
         print("What do you want to change?")  
         print("1) First Name")
         print("2) Last Name")
-        print("3) Go back")   
+        print("3) Date Hired")
+        print("4) Go back")   
         choice = input("Enter your option (amendmenupilot) >> ")
         process_amend_pilot_menu(choice, id)      
     else:
@@ -426,12 +446,20 @@ def process_amend_pilot_menu(choice, id):
         column = "first_name"
     elif choice == "2":
         value = input("Enter the Last Name >> ")    
-        column = "last_name"        
+        column = "last_name" 
     elif choice == "3":
+        value = input("Enter the Date Hired (format YYYY-MM-DD) >> ")
+        if validate_date_input(value, "%Y-%m-%d"):
+            column = "date_hired"
+        else: 
+            print("Input not recognised, try again")
+            process_amend_pilot_menu(choice, id)    
+    elif choice == "4":
         show_action_menu("pilot")    
     else:
         print("Input not recognised, try again 3")  
     update_pilot(column, value, id)  
+    display_pilot_list("pilot_id", id)
     show_main_menu()        
 
 def process_add_menu(object):
@@ -478,7 +506,8 @@ def add_flight():
                 pilot_id = input("Enter the Pilot ID >> ")
             else: 
                 pilot_id = -1    
-            insert_flight(flight_code, route_id, departure_time, pilot_id)
+            id = insert_flight(flight_code, route_id, departure_time, pilot_id)
+            display_flight_list("flight_id", id)
             show_main_menu()   
         else: 
             print("Input not recognised, start again")
@@ -494,7 +523,8 @@ def add_airport():
     else:    
         airport_name = input("Enter the Airport Name >> ")
         country = input("Enter the Country >> ")
-        insert_airport(airport_code, airport_name, country)
+        id = insert_airport(airport_code, airport_name, country)
+        display_airport_list("airport_id", id)
     show_main_menu()       
 
 def add_route():
@@ -503,8 +533,6 @@ def add_route():
     while not airport_exists and attempts <= 3:
         departure_airport_code = input("Enter the Departure Airport Code >> ")
         airport_exists = validate_airport_input(departure_airport_code)    
-        print(departure_airport_code)   
-        print(airport_exists)         
         if not airport_exists:
             print(str(departure_airport_code) +" not found, try again")
             attempts = attempts+1
@@ -535,7 +563,8 @@ def add_route():
     else:    
         duration_minutes = input("Enter the Flight Duration >> ")
         if validate_numeric_input(duration_minutes):
-            insert_route(departure_airport_id, arrival_airport_id, duration_minutes)
+            id = insert_route(departure_airport_id, arrival_airport_id, duration_minutes)
+            display_route_list("route_id", id)
         else:
             print("Invalid input, start again")
             add_route()  
@@ -545,17 +574,16 @@ def add_route():
 def add_pilot():
     first_name = input("Enter the First Name >> ")
     last_name = input("Enter the Last Name >> ")
-    date_of_birth = input("Enter the Date of Birth (format YYYY-MM-DD) >> ")
-    if validate_date_input(date_of_birth, "%Y-%m-%d"):
-        date_hired = input("Enter the Hire Date (format YYYY-MM-DD) >> ")
-        if validate_date_input(date_hired, "%Y-%m-%d"):
-            insert_pilot(first_name, last_name, date_of_birth, date_hired)
+    date_hired = input("Enter the Hire Date (format YYYY-MM-DD) >> ")
+    if validate_date_input(date_hired, "%Y-%m-%d"):
+        id = insert_pilot(first_name, last_name, date_hired)
+        display_pilot_list("pilot_id", id)
     else:
         print("Date not recognised, start again")   
         add_pilot()
     show_main_menu()
 
-
+# Function to show the Delete Menu if selected from the Main Menu
 def show_delete_menu(object):
     if object == "flight":
         print("Choose a flight to delete")
@@ -572,40 +600,51 @@ def show_delete_menu(object):
 
 # -------------------------- Validation Functions ------------------------------------- #
 
+# Validate that the value is a number
 def validate_numeric_input(value):
     return value.isnumeric()
 
-def validate_string_input():
-    print("")
-
+# Validate that the value is an existing airport
 def validate_airport_input(airport_code):
-    cursor = conn.execute("SELECT '1' AS [Found] FROM airport WHERE airport_code = '" + airport_code + "';")
-    for row in cursor:
+    sql = "SELECT '1' AS [Found] FROM airport WHERE airport_code = ?;"
+    param = (''+airport_code+'',)
+    airport = conn.execute(sql, param);
+    for row in airport:
         if row[0] == "1":
             return True
     return False   
 
+# Validate that the value is an existing pilot
 def validate_pilot_input(name):
-    cursor = conn.execute("SELECT '1' AS [Found] FROM pilot WHERE first_name = '" + name + "';")
-    for row in cursor:
+    sql = "SELECT '1' AS [Found] FROM pilot WHERE first_name = ?;"
+    param = (''+name+'',)
+    pilot = conn.execute(sql, param)
+    for row in pilot:
         if row[0] == "1":
             return True
     return False
 
+# Validate that the two airports are part of an existing route
 def validate_route_exists(departure_airport_id, arrival_airport_id):
-    cursor = conn.execute("SELECT '1' AS [Found] FROM route WHERE departure_airport_id = '"+str(departure_airport_id)+"' AND arrival_airport_id = '"+str(arrival_airport_id)+"';")
-    for row in cursor:
+    sql = "SELECT '1' AS [Found] FROM route WHERE departure_airport_id = ? AND arrival_airport_id = ?;"
+    param = (''+str(departure_airport_id)+'', ''+str(arrival_airport_id)+'',)
+    route = conn.execute(sql, param)
+    for row in route:
         if row[0] == "1":
             return True
     return False
 
+# Validate that the value is an existing flight
 def validate_flight_exists(flight_code):
-    cursor = conn.execute("SELECT '1' AS [Found] FROM flight WHERE flight_code = '"+str(flight_code)+"';")
-    for row in cursor:
+    sql = "SELECT '1' AS [Found] FROM flight WHERE flight_code = ?;"
+    param = (''+flight_code+'',)
+    flight = conn.execute(sql, param)
+    for row in flight:
         if row[0] == "1":
             return True
     return False
 
+# Validate that the value is a date
 def validate_date_input(date, format):
     valid = True
     try:
@@ -613,13 +652,6 @@ def validate_date_input(date, format):
     except ValueError:
         valid = False
     return valid    
-
-def validate_flight_input(flight_code):
-    cursor = conn.execute("SELECT '1' AS [Found] FROM flight WHERE flight_code  = '" + flight_code + "';")
-    for row in cursor:
-        if row[0] == "1":
-            return True
-    return False           
 
 # ---------------------------- Transformations ------------------------------------- #   
 
@@ -668,7 +700,7 @@ def update_route(column, value, id):
     print(str(route.rowcount) +" route(s) updated")     
 
 def update_airport(column, value, id):
-    sql = "UPDATE airport SET "+column+" = ? where route_id = "+ id +";"
+    sql = "UPDATE airport SET "+column+" = ? where airport_id = "+ id +";"
     param = (''+str(value)+'',) 
     airport = conn.execute(sql, param)   
     conn.commit()
@@ -677,7 +709,6 @@ def update_airport(column, value, id):
 # ------------------------------- Insert ------------------------------------------- #
 
 def insert_flight(flight_code, route_id, departure_time, pilot_id):
-
     duration_minutes = get_duration_minutes(route_id)
     arrival_time = calculate_arrival_time(departure_time, duration_minutes)
     param = (''+str(flight_code)+'',''+str(route_id)+'',''+str(departure_time)+'',''+str(arrival_time)+'',''+str(pilot_id)+'',''+str(pilot_id)+'',) 
@@ -686,36 +717,35 @@ def insert_flight(flight_code, route_id, departure_time, pilot_id):
     flight = conn.execute(sql, param)
     conn.commit()
     print(str(flight.rowcount) +" flight(s) inserted")
+    return flight.lastrowid
 
 def insert_airport(airport_code, airport_name, country):
-    sql = "INSERT INTO airport (airport_id, airport_code, airport_name, country) \
-                 VALUES (NULL, ?, ?, ?);"
+    sql = "INSERT INTO airport (airport_id, airport_code, airport_name, country) VALUES (NULL, ?, ?, ?);"
     param = (''+str(airport_code)+'',''+str(airport_name)+'',''+str(country)+'',)   
     airport = conn.execute(sql, param)
     conn.commit()
     print(str(airport.rowcount) +" destinations(s) inserted")
+    return airport.lastrowid
 
-def insert_pilot(first_name, last_name, date_of_birth, date_hired):
-    sql = "INSERT INTO pilot (pilot_id, first_name, last_name, date_of_birth, date_hired) \
-                 VALUES (NULL, ?, ?, ?, ?);"
-    param = (''+str(first_name)+'',''+str(last_name)+'',''+str(date_of_birth)+'',''+str(date_hired)+'',) 
+def insert_pilot(first_name, last_name, date_hired):
+    sql = "INSERT INTO pilot (pilot_id, first_name, last_name, date_hired) VALUES (NULL, ?, ?, ?);"
+    param = (''+str(first_name)+'',''+str(last_name)+'',''+str(date_hired)+'',) 
     pilot = conn.execute(sql, param)
     conn.commit()
     print(str(pilot.rowcount) +" pilot(s) inserted")
-
+    return pilot.lastrowid
 
 def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
-    sql = "INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) \
-                 VALUES (null, ?, ?, ?);"
+    sql = "INSERT INTO route (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (null, ?, ?, ?);"
     param = (''+str(departure_airport_id)+'', ''+str(arrival_airport_id)+'', ''+str(duration_minutes)+'', ) 
     route = conn.execute(sql, param)
     conn.commit()
     print(str(route.rowcount) +" route(s) inserted")
-      
+    return route.lastrowid  
 
 # ------------------------------- Select ------------------------------------------- #
 
-# Used to get the route_id from route for a given pair of airports. If route does not exist, None is returned
+# Function to get the route_id from route for a given pair of airports. If route does not exist, None is returned
 def get_route_id(departure_airport_code, arrival_airport_code):
     sql = "SELECT route_id FROM route, airport AS dep, airport AS arr \
                          WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
@@ -726,14 +756,14 @@ def get_route_id(departure_airport_code, arrival_airport_code):
         return row[0]
     return None
 
-# Used to get the flight duration for a given route_id. If route does not exist, None is returned
+# Function to get the flight duration for a given route_id. If route does not exist, None is returned
 def get_duration_minutes(route_id):
     route = conn.execute("SELECT duration_minutes FROM route WHERE route_id = '"+str(route_id)+"';")
     for row in route:
         return row[0]
     return None        
 
-# Used to get the airport_id for a given airport_code. If airport does not exist, None is returned
+# Function to get the airport_id for a given airport_code. If airport does not exist, None is returned
 def get_airport_id(airport_code):
     sql = "SELECT airport_id FROM airport WHERE airport_code = ?;"
     param = (''+str(airport_code)+'',) 
@@ -742,7 +772,7 @@ def get_airport_id(airport_code):
         return row[0]
     return None
 
-# Used to get the count of flights for a given predicate which is a string or number. If no flights meet the search criteria, 0 is returned
+# Function to get the count of flights for a given predicate which is a string or number. If no flights meet the search criteria, 0 is returned
 def get_flight_count(column, value):
     sql = "SELECT COUNT(*) AS [Count] \
                           FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
@@ -755,7 +785,7 @@ def get_flight_count(column, value):
         return int(row[0])
     return 0
 
-# Used to get the count of flights for a given predicate which is a date. If no flights meet the search criteria, 0 is returned
+# Function to get the count of flights for a given predicate which is a date. If no flights meet the search criteria, 0 is returned
 def get_flight_count_for_date(column, date_value):
     split_date = re.split('[- :]', date_value)
     start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
@@ -769,19 +799,21 @@ def get_flight_count_for_date(column, date_value):
     param = (''+str(start_date)+'', ''+str(end_date)+'',)
     flight = conn.execute(sql, param)   
     for row in flight:
-        return row[0]
-    return None
+        return int(row[0])
+    return 0
 
-# Used to get all flights. If no flights exist, "No results found" is displayed to the user
+# Function to get all flights. If no flights exist, "No results found" is displayed to the user
 def display_flight_list():
     flight = conn.execute("SELECT flight_id AS [Flight ID], flight_code AS [Flight Code] FROM flight;")
     table = convert_to_table(flight)
     if not table:
         print("No results found")
+        return False
     else:    
-        print(table)  
+        print(table)
+        return True  
 
-# Used to get the routes for a given predicate. If no routes meet the search criteria, "No results found" is displayed to the user
+# Function to get the routes for a given predicate. If no routes meet the search criteria, "No results found" is displayed to the user
 def display_route_list(column, value):
     sql = "SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport], arr.airport_code AS [Arrival Airport], duration_minutes AS [Duration] FROM route, airport AS dep, airport AS arr \
                          WHERE route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id AND "+column+" = ?;"
@@ -790,28 +822,40 @@ def display_route_list(column, value):
     table = convert_to_table(route)
     if not table:
         print("No results found")
+        return False
     else:    
-        print(table) 
+        print(table)
+        return True 
 
-# Used to get the pilots for a given predicate. If no pilots meet the search criteria, "No results found" is displayed to the user
+# Function to get the pilots for a given predicate. If no pilots meet the search criteria, "No results found" is displayed to the user
 def display_pilot_list(column, value):
-    sql = "SELECT pilot_id AS [Pilot ID], pilot_name AS [Pilot Name], date_of_birth AS [Date Of Birth], date_hired AS [Date Hired] FROM pilot WHERE "+column+" = ?;"
+    sql = "SELECT pilot_id AS [Pilot ID], pilot_name AS [Pilot Name], date_hired AS [Date Hired] FROM pilot WHERE "+column+" = ?;"
     param = (''+str(value)+'',)  
     pilot = conn.execute(sql, param)  
     table = convert_to_table(pilot)
     if not table:
         print("No results found")
+        return False
     else:    
         print(table)
+        return True
 
+# Function to get the airports for a given predicate. If no airports meet the search criteria, "No results found" is displayed to the user
 def display_airport_list(column, value):
     sql = "SELECT airport_id AS [Airport ID], airport_name AS [Airport Name], airport_code AS [Airport Code], country AS [Country] \
         FROM airport WHERE "+column+" = ?;"
     param = (''+str(value)+'',)
     airport = conn.execute(sql, param) 
-    print(convert_to_table(airport))      
+    table = convert_to_table(airport)
+    if not table:
+        print("No results found")
+        return False
+    else:    
+        print(table)   
+        return True
 
-def display_flight_data_for_day(column, date_value):
+# Function to get the flights using a datetime attribute in its predicate. If no flights meet the search criteria, "No results found" is displayed to the user
+def display_flight_data_for_date(column, date_value):
     split_date = re.split('[- :]', date_value)
     start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
     add_day = timedelta(days=1)
@@ -824,59 +868,33 @@ def display_flight_data_for_day(column, date_value):
                           AND "+str(column)+" BETWEEN ? AND ?;"
     param = (''+str(start_date)+'',''+str(end_date)+'',)
     flight = conn.execute(sql, param)    
-    print(convert_to_table(flight))
+    table = convert_to_table(flight)
+    if not table:
+        print("No results found")
+        return False
+    else:    
+        print(table)   
+        return True
 
-
-def display_flight_data_string(column, value):
+# Function to get the flights using a non-date attribute in its predicate. If no flights meet the search criteria, "No results found" is displayed to the user
+def display_flight_data(column, value):
     sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
                           departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
                           FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
                           WHERE route.route_id = flight.route_id \
                           AND route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
                           AND "+str(column)+" = ?;"
-    print(sql)
     param = (''+str(value)+'',)
-    print(param)
     flight = conn.execute(sql, param)                       
-    
-    print("===============================")
-    table = convert_to_table(flight)
-    if not table:
-        print("No results found")
-    else:    
-        print(table)
-
-def display_flight_data_id(column, value):
-    sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
-                          departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
-                          FROM flight_and_pilot AS flight, route, airport AS dep, airport AS arr \
-                          WHERE route.route_id = flight.route_id \
-                          AND route.departure_airport_id = dep.airport_id AND route.arrival_airport_id = arr.airport_id \
-                          AND "+str(column)+" = "+value+";"
-    print(sql)
-
-    param = (''+str(value)+'',)
-    print(param)
-    flight = conn.execute(sql)                      
-    
     print("===============================")
     table = convert_to_table(flight)
     if not table:
         print("No results found")
         return False
     else:    
-        print(table) 
+        print(table)
         return True
 
-'''
-def select_view():
-    flight = conn.execute("SELECT * FROM flight_and_pilot")
-    table = convert_to_table(flight)
-    if not table:
-        print("No results found")
-    else:    
-        print(table)
-'''
 
 # ---------------------Delete ------------------------#
 
@@ -889,7 +907,5 @@ def delete_flight(flight_id):
 
 # -------------------------- Start of UI application ------------------------------------- #
 
-get_flight_count("dep.airport_code", "LGW")
-print(convert_to_table(conn.execute("select * from flight_and_pilot")))
 show_main_menu()
 
