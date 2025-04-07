@@ -314,9 +314,9 @@ def process_view_menu(choice, object):
 
 def process_view_choice(column, value):
     if "time" in column:
-        display_flight_data_for_date(column, value)
+        display_flight_list_for_date(column, value)
     else:
-        display_flight_data(column, value)
+        display_flight_list(column, value)
     show_main_menu()
 
 def show_amend_menu(object):
@@ -332,7 +332,7 @@ def show_amend_menu(object):
 def show_amend_flight_menu():
     print("Choose a flight to amend:")
     id = input("Enter the Flight ID >> ")
-    if display_flight_data("flight_id", id):
+    if display_flight_list("flight_id", id):
         print("===============================")
         print("Choose an attribute to update:")
         print("1) Departure Time")
@@ -374,7 +374,7 @@ def process_amend_flight_menu(choice, id):
     update_flight(column, value, id)
     if recalculate_arrival == "Y": 
         update_arrival_time(id)
-    display_flight_data("flight_id", id)    
+    display_flight_list("flight_id", id)    
     show_main_menu()  
 
 def show_amend_route_menu():
@@ -515,7 +515,7 @@ def add_flight():
             else: 
                 pilot_id = -1    
             id = insert_flight(flight_code, route_id, departure_time, pilot_id)
-            display_flight_data("flight_id", id)
+            display_flight_list("flight_id", id)
             show_main_menu()   
         else: 
             print("Input not recognised, start again")
@@ -653,6 +653,7 @@ def validate_date_input(date, format):
 
 # ---------------------------- Transformations ------------------------------------- #   
 
+# Function to add minutes to a datetime
 def calculate_arrival_time(departure_time, duration):
     split_date = re.split('[- :]', departure_time)
     date_and_time = datetime(int(split_date[0]), int(split_date[1]), int(split_date[2]), int(split_date[3]), int(split_date[4]), 0)
@@ -660,10 +661,12 @@ def calculate_arrival_time(departure_time, duration):
     arrival_time = date_and_time + time_change 
     return arrival_time
 
+# Function to format data into a table
 def convert_to_table(data):
     table = tabulate(data, headers = "keys", tablefmt = "pipe")
     return table
 
+# Function to exit the application
 def exit():
     print("Goodbye")
 
@@ -671,36 +674,42 @@ def exit():
 
 # ------------------------------- Update ------------------------------------------- #
 
+# Function to update a row in the pilots table to change an attribute to a new value
 def update_pilot(column, value, id):
-    sql = "UPDATE pilots SET "+column+" = ? WHERE pilot_id = " + id +";"
+    sql = "UPDATE pilots SET "+str(column)+" = ? WHERE pilot_id = " + id +";"
     param = (''+str(value)+'',)    
     pilot = conn.execute(sql, param)
     conn.commit()
     print(str(pilot.rowcount) + " pilot(s) updated") 
 
+# Function to update a row in the flights table to change an attribute to a new value
 def update_flight(column, value, id):
-    sql = "UPDATE flights SET "+column+" = ? where flight_id = "+ id +";"
+    sql = "UPDATE flights SET "+str(column)+" = ? where flight_id = "+ id +";"
     param = (''+str(value)+'',)   
     flight = conn.execute(sql, param)    
     conn.commit()
     print(str(flight.rowcount) + " flight(s) updated") 
 
+# Function to update a row in the flights table to calculate a new value of arrival_time based on duration_minutes from routes table
 def update_arrival_time(flight_id):
-    sql = "UPDATE flights SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM routes WHERE flights.route_id = routes.route_id) || ' minute') WHERE flight_id = ?;"  
+    sql = "UPDATE flights SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM routes \
+        WHERE flights.route_id = routes.route_id) || ' minute') WHERE flight_id = ?;"  
     param = (''+str(flight_id)+'',) 
     flight = conn.execute(sql, param)         
     conn.commit()
     print(str(flight.rowcount) +" arrival time(s) updated") 
 
+# Function to update a row in the routes table to change an attribute to a new value
 def update_route(column, value, id):
-    sql = "UPDATE routes SET "+column+" = ? where route_id = "+ id +";"
+    sql = "UPDATE routes SET "+str(column)+" = ? where route_id = "+ id +";"
     param = (''+str(value)+'',) 
     route = conn.execute(sql, param)   
     conn.commit()
     print(str(route.rowcount) + " route(s) updated")     
 
+# Function to update a row in the airports table to change an attribute to a new value
 def update_airport(column, value, id):
-    sql = "UPDATE airports SET "+column+" = ? where airport_id = "+ id +";"
+    sql = "UPDATE airports SET "+str(column)+" = ? where airport_id = "+ id +";"
     param = (''+str(value)+'',) 
     airport = conn.execute(sql, param)   
     conn.commit()
@@ -708,17 +717,19 @@ def update_airport(column, value, id):
 
 # ------------------------------- Insert ------------------------------------------- #
 
+# Function to insert a new row into flights table
 def insert_flight(flight_code, route_id, departure_time, pilot_id):
     duration_minutes = get_duration_minutes(route_id)
     arrival_time = calculate_arrival_time(departure_time, duration_minutes)
-    param = (''+str(flight_code)+'',''+str(route_id)+'',''+str(departure_time)+'',''+str(arrival_time)+'',''+str(pilot_id)+'',''+str(pilot_id)+'',) 
     sql = "INSERT INTO flights (flight_id, flight_code, route_id, departure_time, arrival_time, pilot_id) \
            VALUES (NULL, ?, ?, ?, ?, CASE ? WHEN '-1' THEN NULL ELSE ? END);"
+    param = (''+str(flight_code)+'',''+str(route_id)+'',''+str(departure_time)+'',''+str(arrival_time)+'',''+str(pilot_id)+'',''+str(pilot_id)+'',) 
     flight = conn.execute(sql, param)
     conn.commit()
     print(str(flight.rowcount) + " flight(s) inserted")
     return flight.lastrowid
 
+# Function to insert a new row into airports table
 def insert_airport(airport_code, airport_name, country):
     sql = "INSERT INTO airports (airport_id, airport_code, airport_name, country) VALUES (NULL, ?, ?, ?);"
     param = (''+str(airport_code)+'',''+str(airport_name)+'',''+str(country)+'',)   
@@ -727,6 +738,7 @@ def insert_airport(airport_code, airport_name, country):
     print(str(airport.rowcount) + " destinations(s) inserted")
     return airport.lastrowid
 
+# Function to insert a new row into pilots table
 def insert_pilot(first_name, last_name, date_hired):
     sql = "INSERT INTO pilots (pilot_id, first_name, last_name, date_hired) VALUES (NULL, ?, ?, ?);"
     param = (''+str(first_name)+'', ''+str(last_name)+'', ''+str(date_hired)+'',) 
@@ -735,6 +747,7 @@ def insert_pilot(first_name, last_name, date_hired):
     print(str(pilot.rowcount) +" pilot(s) inserted")
     return pilot.lastrowid
 
+# Function to insert a new row into routes table
 def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
     sql = "INSERT INTO routes (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (NULL, ?, ?, ?);"
     param = (''+str(departure_airport_id)+'', ''+str(arrival_airport_id)+'', ''+str(duration_minutes)+'', ) 
@@ -791,7 +804,7 @@ def get_flight_count_for_date(column, date_value):
     start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
     add_day = timedelta(days=1)
     end_date = start_date+add_day
-    sql = "SELECT COUNT(*) AS Count \
+    sql = "SELECT COUNT(*) AS [Count] \
                           FROM flights_and_pilots AS flights, routes, airports AS dep, airports AS arr \
                           WHERE routes.route_id = flights.route_id \
                           AND routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id \
@@ -806,7 +819,7 @@ def get_flight_count_for_date(column, date_value):
 def display_route_list(column, value):
     sql = "SELECT route_id AS [Route ID], dep.airport_code AS [Departure Airport Code], dep.airport_name AS [Departure Airport], \
         arr.airport_code AS [Arrival Airport Code], arr.airport_name AS [Arrival Airport], duration_minutes AS [Duration] FROM routes, airports AS dep, airports AS arr \
-        WHERE routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id AND "+column+" = ?;"
+        WHERE routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id AND "+str(column)+" = ?;"
     param = (''+str(value)+'',)
     route = conn.execute(sql, param)  
     table = convert_to_table(route)
@@ -819,7 +832,7 @@ def display_route_list(column, value):
 
 # Function to get the pilots for a given predicate. If no pilots meet the search criteria, "No results found" is displayed to the user
 def display_pilot_list(column, value):
-    sql = "SELECT pilot_id AS [Pilot ID], pilot_name AS [Pilot Name], date_hired AS [Date Hired] FROM pilots WHERE "+column+" = ?;"
+    sql = "SELECT pilot_id AS [Pilot ID], pilot_name AS [Pilot Name], date_hired AS [Date Hired] FROM pilots WHERE "+str(column)+" = ?;"
     param = (''+str(value)+'',)  
     pilot = conn.execute(sql, param)  
     table = convert_to_table(pilot)
@@ -833,7 +846,7 @@ def display_pilot_list(column, value):
 # Function to get the airports for a given predicate. If no airports meet the search criteria, "No results found" is displayed to the user
 def display_airport_list(column, value):
     sql = "SELECT airport_id AS [Airport ID], airport_name AS [Airport Name], airport_code AS [Airport Code], country AS [Country] \
-        FROM airports WHERE "+column+" = ?;"
+        FROM airports WHERE "+str(column)+" = ?;"
     param = (''+str(value)+'',)
     airport = conn.execute(sql, param) 
     table = convert_to_table(airport)
@@ -845,7 +858,7 @@ def display_airport_list(column, value):
         return True
 
 # Function to get the flights using a datetime attribute in its predicate. If no flights meet the search criteria, "No results found" is displayed to the user
-def display_flight_data_for_date(column, date_value):
+def display_flight_list_for_date(column, date_value):
     split_date = re.split('[- :]', date_value)
     start_date = date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
     add_day = timedelta(days = 1)
@@ -867,7 +880,7 @@ def display_flight_data_for_date(column, date_value):
         return True
 
 # Function to get the flights using a non-date attribute in its predicate. If no flights meet the search criteria, "No results found" is displayed to the user
-def display_flight_data(column, value):
+def display_flight_list(column, value):
     sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
                           departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
                           FROM flights_and_pilots AS flights, routes, airports AS dep, airports AS arr \
@@ -888,6 +901,7 @@ def display_flight_data(column, value):
 
 # ---------------------Delete ------------------------#
 
+# Function to delete a row from flights table
 def delete_flight(flight_id):
     sql = "DELETE FROM flights WHERE flight_id = ?;"
     param = (''+str(flight_id)+'',)
