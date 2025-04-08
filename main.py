@@ -11,18 +11,20 @@ conn.execute("DROP TABLE IF EXISTS flights;")
 conn.execute("DROP TABLE IF EXISTS pilots;")
 conn.execute("DROP TABLE IF EXISTS airports;")
 conn.execute("DROP TABLE IF EXISTS routes;")
+conn.execute("DROP TABLE IF EXISTS status;")
 conn.execute("DROP VIEW IF EXISTS flights_and_pilots;")
 
 conn.execute("CREATE TABLE airports (airport_id INTEGER PRIMARY KEY NOT NULL, airport_name VARCHAR(50) NOT NULL, airport_code VARCHAR(3) NOT NULL, country VARCHAR(50) NOT NULL)")
 conn.execute("CREATE TABLE pilots (pilot_id INTEGER PRIMARY KEY NOT NULL, first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, pilot_name VARCHAR(100) GENERATED ALWAYS AS (first_name || ' ' || last_name) VIRTUAL NOT NULL, date_hired DATE NULL)")
 conn.execute("CREATE TABLE routes (route_id INTEGER PRIMARY KEY NOT NULL, departure_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, arrival_airport_id INTEGER REFERENCES airport(airport_id) NOT NULL, duration_minutes INTEGER NOT NULL)")
-conn.execute("CREATE TABLE flights (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status VARCHAR(15) DEFAULT 'On Time' NULL);")
+conn.execute("CREATE TABLE status (status_id INTEGER PRIMARY KEY NOT NULL, status_name VARCHAR(10) NOT NULL, description VARCHAR(50) NOT NULL)")
+conn.execute("CREATE TABLE flights (flight_id INTEGER PRIMARY KEY NOT NULL, flight_code VARCHAR(10) NOT NULL, route_id INTEGER REFERENCES route(route_id) NOT NULL, departure_time DATETIME NOT NULL, arrival_time DATETIME NULL, pilot_id INTEGER REFERENCES pilot(pilot_id) NULL, status_id VARCHAR(15) DEFAULT 1 NULL);")
 
 print ("Tables created successfully")
 
 # ---------------------------Create Views --------------------------------#
 
-conn.execute("CREATE VIEW flights_and_pilots AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilots.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(pilot_name, 'Unassigned') AS [pilot_name], date_hired, status FROM flights LEFT JOIN pilots ON flights.pilot_id = pilots.pilot_id")
+conn.execute("CREATE VIEW flights_and_pilots AS SELECT flight_id, flight_code, route_id, departure_time, arrival_time, IFNULL(pilots.pilot_id, 'Unassigned') AS [pilot_id], IFNULL(pilot_name, 'Unassigned') AS [pilot_name], date_hired, status.status_id, status.status_name FROM flights, status LEFT JOIN pilots ON flights.pilot_id = pilots.pilot_id WHERE flights.status_id = status.status_id")
 
 # ----------------------------- Insert initial data ---------------------------- #
 
@@ -67,17 +69,25 @@ conn.execute("INSERT INTO routes (route_id, departure_airport_id, arrival_airpor
 conn.execute("INSERT INTO routes (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (11, 7, 1, 52);")
 conn.execute("INSERT INTO routes (route_id, departure_airport_id, arrival_airport_id, duration_minutes) VALUES (12, 8, 1, 100);")
 
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (1, 'FL1234', 1, '2025-05-10 07:10', NULL, 'Departed');")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status) VALUES (2, 'FL4321', 8, '2025-05-11 10:50', 2, 'Late');")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (3, 'FL2345', 2, '2025-05-11 08:30', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (4, 'FL5432', 9, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (1, 'Scheduled', 'Flight is scheduled');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (2, 'On Time', 'Flight is scheduled and is running on time');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (3, 'Boarding', 'Flight is boarding');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (4, 'Late', 'Flight is running late');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (5, 'Departed', 'Flight is in the air');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (6, 'Landed', 'Flight has landed');")
+conn.execute("INSERT INTO status (status_id, status_name, description) VALUES (7, 'Complete', 'Flight has landed and is complete');")
+
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status_id) VALUES (1, 'FL1234', 1, '2025-04-01 07:10', 1, 5);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status_id) VALUES (2, 'FL4321', 8, '2025-04-01 10:50', 2, 4);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status_id) VALUES (3, 'FL2345', 2, '2025-04-02 08:30', 3, 4);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id, status_id) VALUES (4, 'FL5432', 9, '2025-04-02 09:15', 4, 6);")
 
 conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (5, 'FL3456', 3, '2025-05-12 09:15', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (6, 'FL6543', 10, '2025-05-12 09:15', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (7, 'FL4567', 4, '2025-05-12 09:15', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (8, 'FL7654', 11, '2025-05-12 09:15', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (9, 'FL5678', 5, '2025-05-12 09:15', 1);")
-conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (10, 'FL8765', 12, '2025-05-12 09:15', 1);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (6, 'FL6543', 10, '2025-05-13 09:15', 1);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (7, 'FL4567', 4, '2025-05-14 09:15', 1);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (8, 'FL7654', 11, '2025-05-15 09:15', 1);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (9, 'FL5678', 5, '2025-05-16 09:15', 1);")
+conn.execute("INSERT INTO flights (flight_id, flight_code, route_id, departure_time, pilot_id) VALUES (10, 'FL8765', 12, '2025-05-17 09:15', 1);")
 
 # Calculate arrival times for all flights using the duration_minutes from routes
 conn.execute("UPDATE flights SET arrival_time = DATETIME(departure_time, '+' || (SELECT duration_minutes FROM routes WHERE flights.route_id = routes.route_id) || ' minute') WHERE 1=1")
@@ -361,8 +371,13 @@ def process_amend_flight_menu(choice, id):
         value = input("Enter the Arrival Time >> ")
         column = "arrival_time"
     elif choice == "3":
-        value = input("Enter the Flight Status >> ")    
-        column = "status"
+        value = input("Enter the Flight Status >> ")  
+        if(get_status_id(value) > 0):
+            value = get_status_id(value)
+            column = "status_id"
+        else:
+            print("Status not recognised, try again") 
+            process_amend_flight_menu(choice, id)    
     elif choice == "4":
         value = input("Enter the Pilot ID >> ")    
         column = "pilot_id"
@@ -499,7 +514,7 @@ def add_flight():
             departure_airport = input("Enter the Departure Airport Code >> ")
             arrival_airport = input("Enter the Arrival Airport Code >> ")
             route_id = get_route_id(departure_airport, arrival_airport)
-            if route_id == None:
+            if route_id < 0:
                 print("Route "+str(departure_airport)+" to "+str(arrival_airport)+" not found, try again")
                 attempts = attempts+1
             else:
@@ -758,7 +773,16 @@ def insert_route(departure_airport_id, arrival_airport_id, duration_minutes):
 
 # ------------------------------- Select ------------------------------------------- #
 
-# Function to get the route_id from route for a given pair of airports. If route does not exist, None is returned
+# Function to get the status id for a given status_name. If status does not exist, -1 is returned
+def get_status_id(status_name):
+    sql = "SELECT status_id FROM status WHERE status_name = ?;"
+    param = (''+status_name+'',)
+    status = conn.execute(sql, param)
+    for row in status:
+        return row[0]
+    return -1   
+
+# Function to get the route_id from route for a given pair of airports. If route does not exist, -1 is returned
 def get_route_id(departure_airport_code, arrival_airport_code):
     sql = "SELECT route_id FROM routes, airports AS dep, airports AS arr \
                          WHERE routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id \
@@ -767,23 +791,23 @@ def get_route_id(departure_airport_code, arrival_airport_code):
     route = conn.execute(sql, param)
     for row in route:
         return row[0]
-    return None
+    return -1
 
-# Function to get the flight duration for a given route_id. If route does not exist, None is returned
+# Function to get the flight duration for a given route_id. If route does not exist, -1 is returned
 def get_duration_minutes(route_id):
     route = conn.execute("SELECT duration_minutes FROM routes WHERE route_id = '"+str(route_id)+"';")
     for row in route:
         return row[0]
-    return None        
+    return -1        
 
-# Function to get the airport_id for a given airport_code. If airport does not exist, None is returned
+# Function to get the airport_id for a given airport_code. If airport does not exist, -1 is returned
 def get_airport_id(airport_code):
     sql = "SELECT airport_id FROM airports WHERE airport_code = ?;"
     param = (''+str(airport_code)+'',) 
     airport = conn.execute(sql, param)  
     for row in airport:
         return row[0]
-    return None
+    return -1
 
 # Function to get the count of flights for a given predicate which is a string or number. If no flights meet the search criteria, 0 is returned
 def get_flight_count(column, value):
@@ -864,7 +888,7 @@ def display_flight_list_for_date(column, date_value):
     add_day = timedelta(days = 1)
     end_date = start_date + add_day
     sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
-                          departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
+                          departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status_name AS [Status] \
                           FROM flights_and_pilots AS flights, routes, airports AS dep, airports AS arr \
                           WHERE routes.route_id = flights.route_id \
                           AND routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id \
@@ -882,7 +906,7 @@ def display_flight_list_for_date(column, date_value):
 # Function to get the flights using a non-date attribute in its predicate. If no flights meet the search criteria, "No results found" is displayed to the user
 def display_flight_list(column, value):
     sql = "SELECT flight_id AS [Flight ID], flight_code AS [Flight Code], dep.airport_name AS [Departure Airport], arr.airport_name AS [Arrival Airport], \
-                          departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status AS [Status] \
+                          departure_time AS [Departure Time], arrival_time AS [Arrival Time], pilot_name AS [Pilot Name], status_name AS [Status] \
                           FROM flights_and_pilots AS flights, routes, airports AS dep, airports AS arr \
                           WHERE routes.route_id = flights.route_id \
                           AND routes.departure_airport_id = dep.airport_id AND routes.arrival_airport_id = arr.airport_id \
